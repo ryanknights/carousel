@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+
+		<link rel="stylesheet" href="../main.css" />
+
+		<script src="js/jquery-2.1.1.min.js"></script>
+		<script src="../carousel.js"></script>
+
+		<script>
+			$(function ()
+			{
+				$('[data-carousel]').carousel(
+					{
+						slide : function ()
+						{
+							console.log(this);
+						}
+					});
+			});
+		</script>
+	</head>
+
+	<body>
+		<div class="container">
+		    <div data-carousel>
+		         <ul>
+		            <li>
+		                <img src="images/slide1.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide2.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide3.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide4.jpg" />
+		            </li>
+		        </ul>
+		    </div>		    
+		</div>
+	</body>
+
+</html>
