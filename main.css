@@ -24,11 +24,7 @@ div[data-carousel] .viewport {
     position : relative;
     border : 0px solid #cccccc;
     -webkit-transition : height 0.3s linear;
-    overflow : hidden;  
-  -webkit-box-shadow: 0px 2px 1px 0px rgba(50, 50, 50, 0.2);
-  -moz-box-shadow:    0px 2px 1px 0px rgba(50, 50, 50, 0.2);
-  box-shadow:         0px 2px 1px 0px rgba(50, 50, 50, 0.2);
-  border-radius : 0px;
+    overflow : hidden;
 }
 
 div[data-carousel] .viewport > ul {
@@ -37,8 +33,17 @@ div[data-carousel] .viewport > ul {
     padding:0;
     list-style:none;
     position: relative;
-    overflow: scroll;
-    width   : 9999999px;
+
+    -webkit-transition : left 0.5s ease-in-out;
+    -moz-transition : left 0.5s ease-in-out;
+    -o-transition : left 0.5s ease-in-out;
+    -ms-transition : left 0.5s ease-in-out;
+    transition : left 0.5s ease-in-out;
+}
+
+div[data-carousel] .viewport > ul.no-transition
+{
+    transition : none;
 }
 
 div[data-carousel] .viewport > ul:after

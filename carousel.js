@@ -1,5 +1,24 @@
 (function (window, document, $)
 {	
+    function supportTransitions()
+    {
+        var b = document.body || document.documentElement,
+            s = b.style,
+            p = 'transition';
+
+        if (typeof s[p] == 'string') { return true; }
+
+        var v = ['Moz', 'webkit', 'Webkit', 'Khtml', 'O', 'ms'];
+        p = p.charAt(0).toUpperCase() + p.substr(1);
+
+        for (var i = 0; i < v.length; i++) 
+        {
+            if (typeof s[v[i] + p] == 'string') { return true; }
+        }
+
+        return false;        
+    }
+
 	// ==================================================================================================================
     // Carousel Constructor
     // ==================================================================================================================
@@ -14,6 +33,7 @@
 		this.width       = this.$el.width();
 		this.activeSlide = 0;
 		this.inProgress  = false;
+        this.supportTransition = supportTransitions();
 
 		this.options = $.extend({}, this.defaultOptions, options, this.$el.data());
 
@@ -61,10 +81,13 @@
 
         this.options.keyControls && this._addKeyControls(); // Add Keybord Controls
 
-        $(window).resize(function(){
+        if (this.options.responsive)
+        {
+            $(window).resize(function(){
 
-            self._updateDimensions();
-        });
+                self._updateDimensions();
+            });
+        }
 	};
 
 	// =========================================================
@@ -76,7 +99,7 @@
 
         this.wrap.wrap('<div class="viewport"></div>');
 
-        this.viewport = this.$el.find('div.viewport');
+        this.viewport = this.$el.find('div.viewport').css({'width' : this.width});
 
         this.options.infinite && this._setupInfiniteSlider();
 
@@ -233,58 +256,83 @@
     {
         var self = this;
 
-        this.wrap.animate({'left': - (this.activeSlide * this.width) + 'px'}, function(){
+        if (this.supportTransition)
+        {
+            this.wrap.css('left', -(this.activeSlide * this.width) + 'px');
 
-            if (self.options.pagination)
-            {   
-                var paginateToUpdate = (self.options.infinite) ? self.activeSlide - 1 : self.activeSlide;
-
-                self.updatePagination(paginateToUpdate);  
-            }
-            
-            if (self.options.infinite)
+            this.wrap.one('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function ()
             {
-                if (self.slides.eq(self.activeSlide).attr('data-clone') === 'last') 
-                {
-                    self.activeSlide = 1;
-
-                    self.wrap.css({'left': - (self.width * self.activeSlide) + 'px'});
-
-                    self.updatePagination(0);
-                }
-
-                if (self.slides.eq(self.activeSlide).attr('data-clone') === 'first')
-                {
-                    self.activeSlide = self.slides.length - 2;
-
-                    self.wrap.css({'left': - (self.width * self.activeSlide) + 'px'});
-                }
-            }
-
-            if ($.isFunction(callback))
+                self._slideComplete(callback);
+            });     
+        }
+        else
+        {
+            this.wrap.animate({'left': - (this.activeSlide * this.width) + 'px'}, function ()
             {
-                callback.call(self);
-            };
-
-            self.inProgress = false;
-        });
+                self._slideComplete(callback);
+            });
+        }
 
         this.viewport.height(this.slides.eq(this.activeSlide).outerHeight());
     };
 
+    // ==================================================================================================================
+    // Slide Complete
+    // ==================================================================================================================
+
+    Carousel.prototype._slideComplete = function (callback)
+    {   
+        if (this.options.infinite && this.slides.eq(this.activeSlide).is('[data-clone]'))
+        {
+            this.activeSlide = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;
+
+            this._infiniteSlideComplete();
+        }
+
+        if (this.options.pagination)
+        {   
+            var paginateToUpdate = (this.options.infinite) ? this.activeSlide - 1 : this.activeSlide;
+
+            this.updatePagination(paginateToUpdate);  
+        }
+
+        if ($.isFunction(callback))
+        {
+            callback.call(this);
+        };
+
+        this.inProgress = false;           
+    }
+
+    // ==================================================================================================================
+    // Slide Infinite Complete
+    // ==================================================================================================================
+
+    Carousel.prototype._infiniteSlideComplete = function ()
+    {
+        if (this.supportTransition)
+        {
+            this.wrap.addClass('no-transition');
+            this.wrap.css({'left': - (this.width * this.activeSlide) + 'px'});
+            this.wrap[0].offsetHeight;
+            this.wrap.removeClass('no-transition');
+        }
+        else
+        {
+            this.wrap.css({'left': - (this.width * this.activeSlide) + 'px'});   
+        }     
+    }
     // ==================================================================================================================
     // Window Resize Event
     // ==================================================================================================================
 
     Carousel.prototype._updateDimensions = function(){
 
-        this.options.responsive && this.$el.css({width: '100%'}); 
-
         this.width = this.$el.outerWidth();
 
         this.slides.css({'width' : this.width});
 
-        this.viewport.height(this.slides.eq(this.activeSlide).outerHeight());
+        this.viewport.css({'width' : this.width}).height(this.slides.eq(this.activeSlide).outerHeight());
 
         if (this.options.animation === 'slide') 
         {
