@@ -54,7 +54,7 @@
 
 	Carousel.prototype.defaultOptions =
 	{
-        animation   : 'slide',
+        animation   : 'fade',
         controls    : true,
         pagination  : true,
         keyControls : true,
@@ -73,9 +73,11 @@
 	{  
         var self = this;
 
+        this.activeSlide = (this.options.animation === 'slide' && this.options.infinite) ? 1 : 0;
+
         this.options.pagination && this._addPagination(); // Add pagination
 
-        (this.options.animation === 'slide') ? this._setupSlide() : this_setupFade(); // Setup Carousel
+        (this.options.animation === 'slide') ? this._setupSlide() : this._setupFade(); // Setup Carousel
 
         this.options.controls && this._addControls(); // Add Next/Prev Controls
 
@@ -123,8 +125,30 @@
         this.slides.eq(this.slides.length - 1).clone().attr('data-clone', 'first').prependTo(this.wrap); // add last slide to the beggining
 
         this.slides = this.wrap.find('> li'); // update slides object to account for clones
+    }
 
-        this.activeSlide = 1;
+    // ==================================================================================================================
+    // Setup Fading Slideshow
+    // ==================================================================================================================
+
+    Carousel.prototype._setupFade = function() {
+
+        var self = this;
+
+        this.wrap.wrap('<div class="viewport"></div>');
+
+        this.viewport = this.$el.find('div.viewport');
+
+        this.slides.hide().eq(this.activeSlide).show();
+
+        this.slides.css({'position':'absolute'}).width(this.width);
+
+        $(window).load(function(){
+
+            self.wrap.height(self.slides.eq(self.activeSlide).height());
+
+            self.viewport.height(self.slides.eq(self.activeSlide).height());
+        })
     }
 
     // =========================================================
@@ -244,7 +268,7 @@
                 this.findNext(direction);
             }
 
-            (this.options.animation === 'slide') ? this.slide(callback) : this.fade(callback);
+            (this.options.animation === 'slide') ? this._slide(callback) : this._fade(callback);
         }
     };
 
@@ -252,7 +276,7 @@
     // Slide New Position
     // ==================================================================================================================
 
-    Carousel.prototype.slide = function (callback)
+    Carousel.prototype._slide = function (callback)
     {
         var self = this;
 
@@ -322,6 +346,25 @@
             this.wrap.css({'left': - (this.width * this.activeSlide) + 'px'});   
         }     
     }
+
+    // ==================================================================================================================
+    // Fade New Position
+    // ==================================================================================================================
+
+    Carousel.prototype._fade = function()
+    {   
+        var self = this;
+
+        this.slides.fadeOut(300);
+
+        this.slides.eq(this.activeSlide).fadeIn(300, function(){
+
+            self.updatePagination(self.activeSlide);
+
+            self.inProgress = false;
+        });
+    }
+
     // ==================================================================================================================
     // Window Resize Event
     // ==================================================================================================================
@@ -369,7 +412,9 @@
 
     Carousel.prototype.to = function (slide, callback)
     {   
-        if ((slide > 0) && (slide < this.slides.length - 1))
+        var max = (this.options.animation === 'slide' && this.options.infinite) ? (this.slides.length - 2) : this.slides.length;
+
+        if ((slide > 0) && (slide <= max))
         {
             this._change(null, slide, callback);   
         }
