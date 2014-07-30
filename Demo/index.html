@@ -23,9 +23,11 @@
 	</head>
 
 	<body>
+
 		<div class="container">
-		    <div data-carousel>
-		         <ul>
+			<h5>Infinite Carousel</h5>
+		    <div data-carousel data-animation="slide" data-infinite="true" data-start-slide="1">
+		        <ul>
 		            <li>
 		                <img src="images/slide1.jpg" />
 		            </li>
@@ -41,6 +43,46 @@
 		        </ul>
 		    </div>		    
 		</div>
+
+		<div class="container">
+			<h5>Non Infinite Carousel</h5>
+		    <div data-carousel data-animation="slide" data-infinite="false" data-start-slide="2">
+		        <ul>
+		            <li>
+		                <img src="images/slide1.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide2.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide3.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide4.jpg" />
+		            </li>
+		        </ul>
+		    </div>		    
+		</div>
+
+		<div class="container">
+			<h5>Fading Carousel</h5>
+		    <div data-carousel data-animation="fade" data-start-slide="4">
+		        <ul>
+		            <li>
+		                <img src="images/slide1.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide2.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide3.jpg" />
+		            </li>
+		            <li>
+		                <img src="images/slide4.jpg" />
+		            </li>
+		        </ul>
+		    </div>		    
+		</div>			
 	</body>
 
 </html>

@@ -6,14 +6,22 @@
             s = b.style,
             p = 'transition';
 
-        if (typeof s[p] == 'string') { return true; }
+        if (typeof s[p] == 'string') 
+        {
+            this.animationPrefix = p;
+            return true; 
+        }
 
         var v = ['Moz', 'webkit', 'Webkit', 'Khtml', 'O', 'ms'];
         p = p.charAt(0).toUpperCase() + p.substr(1);
 
         for (var i = 0; i < v.length; i++) 
         {
-            if (typeof s[v[i] + p] == 'string') { return true; }
+            if (typeof s[v[i] + p] == 'string')
+            {   
+                this.animationPrefix = v[i];
+                return true;
+            }
         }
 
         return false;        
@@ -33,7 +41,7 @@
 		this.width       = this.$el.width();
 		this.activeSlide = 0;
 		this.inProgress  = false;
-        this.supportTransition = supportTransitions();
+        this.supportTransition = supportTransitions.call(this);
 
 		this.options = $.extend({}, this.defaultOptions, options, this.$el.data());
 
@@ -54,13 +62,14 @@
 
 	Carousel.prototype.defaultOptions =
 	{
-        animation   : 'fade',
+        animation   : 'slide',
         controls    : true,
         pagination  : true,
         keyControls : true,
         captions    : false,
         responsive  : true,
         infinite    : true,
+        startSlide  : null,
 
         initiate   : function () {},
         complete   : function () {}
@@ -73,7 +82,7 @@
 	{  
         var self = this;
 
-        this.activeSlide = (this.options.animation === 'slide' && this.options.infinite) ? 1 : 0;
+        this._setStartSlide();
 
         this.options.pagination && this._addPagination(); // Add pagination
 
@@ -91,6 +100,23 @@
             });
         }
 	};
+
+    // =========================================================
+    // Set Starting Slide
+
+    Carousel.prototype._setStartSlide = function ()
+    {   
+        var s = this.options.startSlide;
+
+        if (this._isInfiniteSlider())
+        {
+             this.activeSlide = (!s || s < 1 || s > this.slides.length) ? 1 : s; // If no start slide or slide is not within range
+        }                                                                        // default to 1 to account for start clone
+        else
+        {
+            this.activeSlide = (!s || s < 0 || s > this.slides.length) ? 0 : s - 1; // If no start slide or slide is not within range
+        }                                                                           // default to 0 else minus 1 to the start slide as is not infinite
+    }
 
 	// =========================================================
 	// Setup Carousel - Slide Animation
@@ -184,22 +210,24 @@
             self.pagination.children('ul').append('<li><a href="#" data-slide="' + (index + 1) + '"></a></li>');
         });
 
-        this.pagination.find('a').eq(0).addClass('active');
+        this.updatePagination();
 
         this.pagination.on('click', 'a', function (event)
         {
             event.preventDefault();
 
-            self.to($(this).attr('data-slide'), self.options.complete)
+            self.to(parseInt($(this).attr('data-slide')), self.options.complete)
         });
     }
 
     // =========================================================
     // Update Carousel Pagination
 
-    Carousel.prototype.updatePagination = function (number) {
+    Carousel.prototype.updatePagination = function ()
+    {   
+        var toUpdate = (this._isInfiniteSlider()) ? this.activeSlide - 1 : this.activeSlide;
 
-        this.pagination.find('a').removeClass('active').eq(number).addClass('active');
+        this.pagination.find('a').removeClass('active').eq(toUpdate).addClass('active');
     };
 
     // =========================================================
@@ -236,7 +264,7 @@
 
         (direction === 'forward') ? this.activeSlide++ : this.activeSlide--;
 
-        if ((this.options.animation === 'fade') || (this.options.animation === 'slide' && !this.options.infinite))
+        if (!this._isInfiniteSlider())
         {   
             if (direction === 'forward' && this.activeSlide === this.slides.length)
             {
@@ -313,17 +341,9 @@
             this._infiniteSlideComplete();
         }
 
-        if (this.options.pagination)
-        {   
-            var paginateToUpdate = (this.options.infinite) ? this.activeSlide - 1 : this.activeSlide;
+        this.options.pagination && this.updatePagination();
 
-            this.updatePagination(paginateToUpdate);  
-        }
-
-        if ($.isFunction(callback))
-        {
-            callback.call(this);
-        };
+        $.isFunction(callback) && callback.call(this);
 
         this.inProgress = false;           
     }
@@ -359,7 +379,7 @@
 
         this.slides.eq(this.activeSlide).fadeIn(300, function(){
 
-            self.updatePagination(self.activeSlide);
+            self.options.pagination && self.updatePagination();
 
             self.inProgress = false;
         });
@@ -369,8 +389,8 @@
     // Window Resize Event
     // ==================================================================================================================
 
-    Carousel.prototype._updateDimensions = function(){
-
+    Carousel.prototype._updateDimensions = function ()
+    {
         this.width = this.$el.outerWidth();
 
         this.slides.css({'width' : this.width});
@@ -378,14 +398,26 @@
         this.viewport.css({'width' : this.width}).height(this.slides.eq(this.activeSlide).outerHeight());
 
         if (this.options.animation === 'slide') 
-        {
+        {   
+            this.wrap.addClass('no-transition');
             this.wrap.css({'width': (this.slides.length * this.width), 'left': - (this.width * this.activeSlide) + 'px'});
+            this.wrap[0].offsetHeight;
+            this.wrap.removeClass('no-transition');            
         }
         else 
         {
             this.wrap.width(this.width).height(this.slides.eq(this.activeSlide).outerHeight());
         }
     };
+
+    // ==================================================================================================================
+    // Returns If Is An Infinite Slider
+    // ==================================================================================================================
+
+    Carousel.prototype._isInfiniteSlider = function ()
+    {
+        return ((this.options.animation === 'slide') && (this.options.infinite));
+    }
 
     // ==================================================================================================================
     // Public Methods
@@ -412,11 +444,12 @@
 
     Carousel.prototype.to = function (slide, callback)
     {   
-        var max = (this.options.animation === 'slide' && this.options.infinite) ? (this.slides.length - 2) : this.slides.length;
+        var max          = (this._isInfiniteSlider()) ? (this.slides.length - 2) : this.slides.length, // Find the max slide
+            currentSlide = (this._isInfiniteSlider()) ? this.activeSlide : this.activeSlide + 1; // Find the current slide taking into account 0 based for non infinite slider
 
-        if ((slide > 0) && (slide <= max))
+        if ((slide > 0) && (slide <= max) && (currentSlide !== parseInt(slide))) // If slide is in allowed range & not the current slide
         {
-            this._change(null, slide, callback);   
+            this._change(null, slide, callback);
         }
     };
 
