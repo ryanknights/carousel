@@ -59,6 +59,21 @@ div[data-carousel] .viewport > ul li {
     width   : 100%;
 }
 
+div[data-carousel].fade .viewport > ul li
+{
+    -webkit-transition : opacity 0.5s ease-in-out;
+    -moz-transition : opacity 0.5s ease-in-out;
+    -o-transition : opacity 0.5s ease-in-out;
+    -ms-transition : opacity 0.5s ease-in-out; 
+
+    opacity : 0;
+}
+
+div[data-carousel].fade .viewport > ul li.active
+{
+    opacity : 1;
+}
+
 div[data-carousel] .viewport > ul li img {
 
     width:100%;

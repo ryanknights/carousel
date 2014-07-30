@@ -125,6 +125,8 @@
 	{  
         var self = this;
 
+        this.$el.addClass('slide');
+
         this.wrap.wrap('<div class="viewport"></div>');
 
         this.viewport = this.$el.find('div.viewport').css({'width' : this.width});
@@ -133,7 +135,7 @@
 
         this.wrap.css({'width': (this.slides.length * this.width), 'left': - (this.width * this.activeSlide) + 'px'});
 
-        this.slides.css({'width' : this.width});
+        this.slides.css({'width' : this.width}).eq(this.activeSlide).addClass('active');
         
         $(window).load(function(){ 
 
@@ -161,11 +163,13 @@
 
         var self = this;
 
+        this.$el.addClass('fade');
+
         this.wrap.wrap('<div class="viewport"></div>');
 
         this.viewport = this.$el.find('div.viewport');
 
-        this.slides.hide().eq(this.activeSlide).show();
+        this.slides.eq(this.activeSlide).addClass('active');
 
         this.slides.css({'position':'absolute'}).width(this.width);
 
@@ -223,9 +227,11 @@
     // =========================================================
     // Update Carousel Pagination
 
-    Carousel.prototype.updatePagination = function ()
-    {   
-        var toUpdate = (this._isInfiniteSlider()) ? this.activeSlide - 1 : this.activeSlide;
+    Carousel.prototype.updatePagination = function (index)
+    {
+        index = index || this.activeSlide;
+
+        var toUpdate = (this._isInfiniteSlider()) ? index - 1 : index;
 
         this.pagination.find('a').removeClass('active').eq(toUpdate).addClass('active');
     };
@@ -306,7 +312,8 @@
 
     Carousel.prototype._slide = function (callback)
     {
-        var self = this;
+        var self               = this,
+            paginationToUpdate = null;
 
         if (this.supportTransition)
         {
@@ -315,7 +322,7 @@
             this.wrap.one('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function ()
             {
                 self._slideComplete(callback);
-            });     
+            });
         }
         else
         {
@@ -324,6 +331,13 @@
                 self._slideComplete(callback);
             });
         }
+
+        if (this.options.pagination && this.options.infinite && this.slides.eq(this.activeSlide).is('[data-clone]'))
+        {
+            paginationToUpdate = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;            
+        }
+
+        this.options.pagination && this.updatePagination(paginationToUpdate);
 
         this.viewport.height(this.slides.eq(this.activeSlide).outerHeight());
     };
@@ -335,13 +349,13 @@
     Carousel.prototype._slideComplete = function (callback)
     {   
         if (this.options.infinite && this.slides.eq(this.activeSlide).is('[data-clone]'))
-        {
+        {   
             this.activeSlide = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;
 
             this._infiniteSlideComplete();
         }
 
-        this.options.pagination && this.updatePagination();
+        this.slides.removeClass('active').eq(this.activeSlide).addClass('active');
 
         $.isFunction(callback) && callback.call(this);
 
@@ -371,18 +385,39 @@
     // Fade New Position
     // ==================================================================================================================
 
-    Carousel.prototype._fade = function()
+    Carousel.prototype._fade = function (callback)
     {   
         var self = this;
 
-        this.slides.fadeOut(300);
+        if (this.supportTransition)
+        {
+            this.slides.removeClass('active').eq(this.activeSlide).addClass('active');
 
-        this.slides.eq(this.activeSlide).fadeIn(300, function(){
+            this.slides.eq(this.activeSlide).one('transitionend webkitTransitionEnd oTransitionEnd otransitionend MSTransitionEnd', function ()
+            {
+                self._fadeComplete(callback);
+            });            
+        }
+        else
+        {
+            this.slides.fadeOut(300).eq(this.activeSlide).fadeIn(300, function ()
+            {
+                self._fadeComplete(callback);   
+            });
+        }
 
-            self.options.pagination && self.updatePagination();
+        this.options.pagination && this.updatePagination();
+    };
 
-            self.inProgress = false;
-        });
+    // ==================================================================================================================
+    // Fade Complete
+    // ==================================================================================================================
+
+    Carousel.prototype._fadeComplete = function (callback)
+    {
+        $.isFunction(callback) && callback.call(this);
+
+        this.inProgress = false;
     }
 
     // ==================================================================================================================
