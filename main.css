@@ -7,7 +7,7 @@ body, html
 .container
 {
     margin:0 auto;
-    width : 80%;
+    width : 100%;
 }
 
 div[data-carousel] *
@@ -17,12 +17,11 @@ div[data-carousel] *
 
 div[data-carousel] 
 {
-    position:relative;
+
 }
 
 div[data-carousel] .viewport {
     position : relative;
-    border : 0px solid #cccccc;
     -webkit-transition : height 0.3s linear;
     overflow : hidden;
 }
@@ -33,52 +32,55 @@ div[data-carousel] .viewport > ul {
     padding:0;
     list-style:none;
     position: relative;
+}
 
+div[data-carousel] .viewport > ul.slide.transition-active
+{
     -webkit-transition : left 0.5s ease-in-out;
-    -Moz-transition : left 0.5s ease-in-out;
+    -moz-transition : left 0.5s ease-in-out;
     -o-transition : left 0.5s ease-in-out;
     -ms-transition : left 0.5s ease-in-out;
-    
+    transition     : left 0.5s ease-in-out;    
 }
 
-div[data-carousel] .viewport > ul.no-transition
+div[data-carousel] .no-transition
 {
-    transition : none;
+    -webkit-transition : none!important;
+    -moz-transition : none!important;
+    -o-transition : none!important;
+    -ms-transition : none!important;
+    transition     : none!important;
 }
 
-div[data-carousel] .viewport > ul:after
-{
-    clear : both;
-}
+
 
 div[data-carousel] .viewport > ul li {
 
     float:left;
-    z-index:1;
     position:relative;
-    width   : 100%;
 }
 
-div[data-carousel].fade .viewport > ul li
-{
+div[data-carousel] .viewport > ul.fade.transition-active li
+{   
+    opacity : 0;
+
     -webkit-transition : opacity 0.5s ease-in-out;
     -moz-transition : opacity 0.5s ease-in-out;
     -o-transition : opacity 0.5s ease-in-out;
-    -ms-transition : opacity 0.5s ease-in-out; 
-
-    opacity : 0;
+    -ms-transition : opacity 0.5s ease-in-out;
+    transition : opacity 0.5s ease-in-out;      
 }
 
-div[data-carousel].fade .viewport > ul li.active
+div[data-carousel] .viewport > ul.fade.transition-active li.active
 {
     opacity : 1;
 }
 
+
 div[data-carousel] .viewport > ul li img {
 
-    width:100%;
+    max-width:100%;
     height:auto;
-    z-index:2;
     display:block;
 }
 

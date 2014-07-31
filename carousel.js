@@ -36,14 +36,13 @@
 		this.el  = el;
 		this.$el = $(el);
 
-		this.wrap        = this.$el.find('> ul');
-		this.slides      = this.wrap.find('> li');
-		this.width       = this.$el.width();
-		this.activeSlide = 0;
-		this.inProgress  = false;
-        this.supportTransition = supportTransitions.call(this);
+        this.options = $.extend({}, this.defaultOptions, options, this.$el.data());
 
-		this.options = $.extend({}, this.defaultOptions, options, this.$el.data());
+		this.wrap              = this.$el.find('> ul');
+		this.slides            = this.wrap.find('> li');
+		this.width             = this.$el.width();
+		this.inProgress        = false;
+        this.supportTransition = supportTransitions.call(this);
 
 		this._init();
 	}
@@ -70,6 +69,7 @@
         responsive  : true,
         infinite    : true,
         startSlide  : null,
+        useCss      : false,
 
         initiate   : function () {},
         complete   : function () {}
@@ -92,13 +92,18 @@
 
         this.options.keyControls && this._addKeyControls(); // Add Keybord Controls
 
+        if (this.supportTransition && this.options.useCss)
+        {   
+            self.wrap.addClass('transition-active');
+        }
+
         if (this.options.responsive)
         {
             $(window).resize(function(){
 
                 self._updateDimensions();
             });
-        }
+        }              
 	};
 
     // =========================================================
@@ -110,11 +115,11 @@
 
         if (this._isInfiniteSlider())
         {
-             this.activeSlide = (!s || s < 1 || s > this.slides.length) ? 1 : s; // If no start slide or slide is not within range
+             this.activeSlide = (!s || s < 0 || s > this.slides.length) ? 1 : s + 1; // If no start slide or slide is not within range
         }                                                                        // default to 1 to account for start clone
         else
         {
-            this.activeSlide = (!s || s < 0 || s > this.slides.length) ? 0 : s - 1; // If no start slide or slide is not within range
+            this.activeSlide = (!s || s < 0 || s > this.slides.length) ? 0 : s; // If no start slide or slide is not within range
         }                                                                           // default to 0 else minus 1 to the start slide as is not infinite
     }
 
@@ -125,9 +130,7 @@
 	{  
         var self = this;
 
-        this.$el.addClass('slide');
-
-        this.wrap.wrap('<div class="viewport"></div>');
+        this.wrap.addClass('slide').wrap('<div class="viewport"></div>');
 
         this.viewport = this.$el.find('div.viewport').css({'width' : this.width});
 
@@ -137,8 +140,8 @@
 
         this.slides.css({'width' : this.width}).eq(this.activeSlide).addClass('active');
         
-        $(window).load(function(){ 
-
+        $(window).load(function ()
+        {
             self.viewport.css({'height' : (self.slides.eq(self.activeSlide).outerHeight())});
         });
 	};
@@ -163,21 +166,29 @@
 
         var self = this;
 
-        this.$el.addClass('fade');
-
-        this.wrap.wrap('<div class="viewport"></div>');
+        this.wrap.addClass('fade').wrap('<div class="viewport"></div>');
 
         this.viewport = this.$el.find('div.viewport');
 
-        this.slides.eq(this.activeSlide).addClass('active');
+        this.slides.css({'position':'absolute', 'width' : this.width});
 
-        this.slides.css({'position':'absolute'}).width(this.width);
+        if (this.supportTransition && this.options.useCss)
+        {
+            this.slides.addClass('no-transition');
+            this.slides.eq(this.activeSlide).addClass('active');
+            this.slides[0].offsetHeight;
+            this.slides.removeClass('no-transition');
+        }
+        else
+        {
+            this.slides.hide().eq(this.activeSlide).show().addClass('active');  
+        }
 
-        $(window).load(function(){
+        $(window).load(function ()
+        {
+            self.wrap.height(self.slides.eq(self.activeSlide).outerHeight());
 
-            self.wrap.height(self.slides.eq(self.activeSlide).height());
-
-            self.viewport.height(self.slides.eq(self.activeSlide).height());
+            self.viewport.height(self.slides.eq(self.activeSlide).outerHeight());
         })
     }
 
@@ -211,7 +222,7 @@
 
         this.slides.each(function (index, el)
         {
-            self.pagination.children('ul').append('<li><a href="#" data-slide="' + (index + 1) + '"></a></li>');
+            self.pagination.children('ul').append('<li><a href="#" data-slide="' + index + '"></a></li>');
         });
 
         this.updatePagination();
@@ -293,9 +304,9 @@
         {
             this.inProgress = true;
 
-            if (slide) 
+            if (slide !== null) 
             {   
-                this.activeSlide = (this.options.animation === 'slide' && this.options.infinite) ? slide : slide - 1;
+                this.activeSlide = (this._isInfiniteSlider()) ? slide + 1 : slide;
             } 
             else 
             {
@@ -312,10 +323,9 @@
 
     Carousel.prototype._slide = function (callback)
     {
-        var self               = this,
-            paginationToUpdate = null;
+        var self = this;
 
-        if (this.supportTransition)
+        if (this.supportTransition && this.options.useCss)
         {
             this.wrap.css('left', -(this.activeSlide * this.width) + 'px');
 
@@ -326,7 +336,7 @@
         }
         else
         {
-            this.wrap.animate({'left': - (this.activeSlide * this.width) + 'px'}, function ()
+            this.wrap.animate({'left': -(this.activeSlide * this.width) + 'px'}, function ()
             {
                 self._slideComplete(callback);
             });
@@ -334,7 +344,7 @@
 
         if (this.options.pagination && this.options.infinite && this.slides.eq(this.activeSlide).is('[data-clone]'))
         {
-            paginationToUpdate = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;            
+            var paginationToUpdate = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;            
         }
 
         this.options.pagination && this.updatePagination(paginationToUpdate);
@@ -349,10 +359,8 @@
     Carousel.prototype._slideComplete = function (callback)
     {   
         if (this.options.infinite && this.slides.eq(this.activeSlide).is('[data-clone]'))
-        {   
-            this.activeSlide = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;
-
-            this._infiniteSlideComplete();
+        {
+            this._infiniteReset();
         }
 
         this.slides.removeClass('active').eq(this.activeSlide).addClass('active');
@@ -366,9 +374,11 @@
     // Slide Infinite Complete
     // ==================================================================================================================
 
-    Carousel.prototype._infiniteSlideComplete = function ()
-    {
-        if (this.supportTransition)
+    Carousel.prototype._infiniteReset = function ()
+    {   
+        this.activeSlide = (this.slides.eq(this.activeSlide).attr('data-clone') === 'last') ? 1 : this.slides.length - 2;
+
+        if (this.supportTransition && this.options.useCss)
         {
             this.wrap.addClass('no-transition');
             this.wrap.css({'left': - (this.width * this.activeSlide) + 'px'});
@@ -389,7 +399,7 @@
     {   
         var self = this;
 
-        if (this.supportTransition)
+        if (this.supportTransition && this.options.useCss)
         {
             this.slides.removeClass('active').eq(this.activeSlide).addClass('active');
 
@@ -400,7 +410,7 @@
         }
         else
         {
-            this.slides.fadeOut(300).eq(this.activeSlide).fadeIn(300, function ()
+            this.slides.removeClass('active').fadeOut().eq(this.activeSlide).addClass('active').fadeIn(function ()
             {
                 self._fadeComplete(callback);   
             });
@@ -480,9 +490,9 @@
     Carousel.prototype.to = function (slide, callback)
     {   
         var max          = (this._isInfiniteSlider()) ? (this.slides.length - 2) : this.slides.length, // Find the max slide
-            currentSlide = (this._isInfiniteSlider()) ? this.activeSlide : this.activeSlide + 1; // Find the current slide taking into account 0 based for non infinite slider
+            currentSlide = (this._isInfiniteSlider()) ? this.activeSlide - 1 : this.activeSlide; // Find the current slide taking into account 0 based for non infinite slider
 
-        if ((slide > 0) && (slide <= max) && (currentSlide !== parseInt(slide))) // If slide is in allowed range & not the current slide
+        if ((slide >= 0) && (slide < max) && (currentSlide !== parseInt(slide))) // If slide is in allowed range & not the current slide
         {
             this._change(null, slide, callback);
         }
