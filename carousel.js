@@ -43,6 +43,7 @@
 		this.width             = this.$el.width();
 		this.inProgress        = false;
         this.supportTransition = supportTransitions.call(this);
+        this.interval          = null;
 
 		this._init();
 	}
@@ -61,15 +62,20 @@
 
 	Carousel.prototype.defaultOptions =
 	{
-        animation   : 'slide',
-        controls    : true,
-        pagination  : true,
-        keyControls : true,
-        captions    : false,
-        responsive  : true,
-        infinite    : true,
-        startSlide  : null,
-        useCss      : false,
+        animation             : 'slide',
+        controls              : true,
+        pagination            : true,
+        keyControls           : true,
+        captions              : false,
+        responsive            : true,
+        infinite              : true,
+        startSlide            : null,
+        useCss                : true,
+
+        automatic             : false,
+        automaticDelay        : 3000,
+        automaticDirection    : 'next',
+        automaticPauseOnHover : true,
 
         initiate   : function () {},
         complete   : function () {}
@@ -96,6 +102,10 @@
         {   
             self.wrap.addClass('transition-active');
         }
+
+        (this.options.automatic && this.options.automaticPauseOnHover) && this._pauseOnHover();
+
+        this.options.automatic && this.start();
 
         if (this.options.responsive)
         {
@@ -174,10 +184,10 @@
 
         if (this.supportTransition && this.options.useCss)
         {
-            this.slides.addClass('no-transition');
+            this.slides.eq(this.activeSlide).addClass('no-transition');
             this.slides.eq(this.activeSlide).addClass('active');
-            this.slides[0].offsetHeight;
-            this.slides.removeClass('no-transition');
+            this.slides.eq(this.activeSlide).offsetHeight;
+            this.slides.eq(this.activeSlide).removeClass('no-transition');
         }
         else
         {
@@ -195,9 +205,9 @@
     // =========================================================
     // Insert Carousel Controls
 
-    Carousel.prototype._addControls = function() {
-
-        var self     = this;
+    Carousel.prototype._addControls = function () 
+    {
+        var self     = this,
             next     = '<a class="direction-next" data-direction="forward"></a>',
             previous = '<a class="direction-previous" data-direction="previous"></a>';
 
@@ -206,6 +216,23 @@
         this.$el.on('click', '[data-direction]', function(){
 
             ($(this).attr('data-direction') === 'forward') ? self.next(self.options.complete) : self.previous(self.options.complete);
+        });
+    };
+
+    // =========================================================
+    // Enables Pause On Hover Events
+
+    Carousel.prototype._pauseOnHover = function ()
+    {   
+        var self = this;
+
+        this.viewport.on('mouseenter', function ()
+        {
+            self.stop();
+
+        }).on('mouseleave', function ()
+        {
+            self.start();
         });
     };
 
@@ -365,6 +392,8 @@
 
         this.slides.removeClass('active').eq(this.activeSlide).addClass('active');
 
+        (this.options.automatic && !this.options.automaticPauseOnHover) && this.start();
+
         $.isFunction(callback) && callback.call(this);
 
         this.inProgress = false;           
@@ -426,6 +455,8 @@
     Carousel.prototype._fadeComplete = function (callback)
     {
         $.isFunction(callback) && callback.call(this);
+
+        (this.options.automatic && !this.options.automaticPauseOnHover) && this.start();
 
         this.inProgress = false;
     }
@@ -496,6 +527,34 @@
         {
             this._change(null, slide, callback);
         }
+    };
+
+    // =========================================================
+    // Start Automatic Carousel
+
+    Carousel.prototype.start = function ()
+    {
+        var self = this;
+
+        this.options.automatic = true; // Set automatic options to true
+
+        this.interval !== null && clearInterval(this.interval); // If interval is currently running clear it, gets called after each complete slide
+
+        this.interval = setInterval(function () // Restart the interval
+        {
+            self[self.options.automaticDirection]();
+
+        }, this.options.automaticDelay);
+    };
+
+    // =========================================================
+    // Start Automatic Carousel
+
+    Carousel.prototype.stop = function ()
+    {   
+        this.options.automatic = false;
+
+        this.interval !== null && clearInterval(this.interval);
     };
 
 	// ==================================================================================================================
