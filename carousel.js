@@ -75,7 +75,7 @@
         automatic             : false,
         automaticDelay        : 3000,
         automaticDirection    : 'next',
-        automaticPauseOnHover : true,
+        automaticPauseOnHover : false,
 
         initiate   : function () {},
         complete   : function () {}
@@ -215,6 +215,8 @@
 
         this.$el.on('click', '[data-direction]', function(){
 
+            (self.options.automatic && !self.options.automaticPauseOnHover) && self.start();
+
             ($(this).attr('data-direction') === 'forward') ? self.next(self.options.complete) : self.previous(self.options.complete);
         });
     };
@@ -258,6 +260,8 @@
         {
             event.preventDefault();
 
+            (self.options.automatic && !self.options.automaticPauseOnHover) && self.start();
+
             self.to(parseInt($(this).attr('data-slide')), self.options.complete)
         });
     }
@@ -288,10 +292,12 @@
             switch(e.keyCode)
             {
             case 37:
+                (self.options.automatic && !self.options.automaticPauseOnHover) && self.start();
                 self.previous(self.options.complete);
                 break;
 
             case 39:
+                (self.options.automatic && !self.options.automaticPauseOnHover) && self.start();
                 self.next(self.options.complete);
                 break;
 
@@ -392,8 +398,6 @@
 
         this.slides.removeClass('active').eq(this.activeSlide).addClass('active');
 
-        (this.options.automatic && !this.options.automaticPauseOnHover) && this.start();
-
         $.isFunction(callback) && callback.call(this);
 
         this.inProgress = false;           
@@ -455,8 +459,6 @@
     Carousel.prototype._fadeComplete = function (callback)
     {
         $.isFunction(callback) && callback.call(this);
-
-        (this.options.automatic && !this.options.automaticPauseOnHover) && this.start();
 
         this.inProgress = false;
     }
@@ -585,10 +587,6 @@
         });
 	}
 
-    $.fn.carousel = Plugin;
-
-	// ==================================================================================================================
-    // Carousel API Events
-    // ==================================================================================================================    
+    $.fn.carousel = Plugin;    
 
 }(window, document, jQuery));
