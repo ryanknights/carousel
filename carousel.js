@@ -68,9 +68,11 @@
         keyControls           : true,
         captions              : false,
         responsive            : true,
-        infinite              : true,
+        infinite              : false,
         startSlide            : null,
         useCss                : true,
+
+        drag                  : true,
 
         automatic             : false,
         automaticDelay        : 3000,
@@ -97,6 +99,8 @@
         this.options.controls && this._addControls(); // Add Next/Prev Controls
 
         this.options.keyControls && this._addKeyControls(); // Add Keybord Controls
+
+        (this.options.drag) && this._addDragControls();
 
         if (this.supportTransition && this.options.useCss)
         {   
@@ -218,6 +222,44 @@
             (self.options.automatic && !self.options.automaticPauseOnHover) && self.start();
 
             ($(this).attr('data-direction') === 'forward') ? self.next(self.options.complete) : self.previous(self.options.complete);
+        });
+    };
+
+    // =========================================================
+    // Insert Carousel Drag Controls
+
+    Carousel.prototype._addDragControls = function ()
+    {   
+        var self = this;
+
+        this.wrap.on('mousedown.carousel', function (e)
+        {    
+            e.preventDefault();
+
+            if (!self.inProgress)
+            {
+                self.wrap.addClass('no-transition');
+
+                var startPos = e.pageX,
+                    currentLeft = parseInt(self.wrap.css('left'));
+
+                self.wrap.off('mousemove.carousel').on('mousemove.carousel', function (moveEvt)
+                {   
+                    var mousePos = moveEvt.clientX,
+                        move     = startPos - mousePos;
+
+                    self.wrap.css('left', currentLeft - move);               
+                });
+
+                self.wrap.on('mouseup.carousel mouseleave.carousel', function (upEvt)
+                {
+                    var endPos = upEvt.pageX;
+
+                    self.wrap.off('mousemove.carousel mouseup.carousel mouseleave.carousel').removeClass('no-transition');
+
+                    ((startPos - endPos) > 0) ? self.next() : self.previous();
+                });
+            }
         });
     };
 
