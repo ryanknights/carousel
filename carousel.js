@@ -39,6 +39,7 @@
         this.options = $.extend({}, this.defaultOptions, options, this.$el.data());
 
 		this.wrap              = this.$el.find('> ul');
+        this.preLoadCounter    = 0;
 		this.slides            = this.wrap.find('> li');
 		this.width             = this.$el.width();
 		this.inProgress        = false;
@@ -68,11 +69,14 @@
         keyControls           : true,
         captions              : false,
         responsive            : true,
-        infinite              : false,
+        infinite              : true,
         startSlide            : null,
         useCss                : true,
 
         drag                  : true,
+
+        preLoad               : true,
+        preLoadDelay          : 0,
 
         automatic             : false,
         automaticDelay        : 3000,
@@ -102,11 +106,6 @@
 
         (this.options.drag) && this._addDragControls();
 
-        if (this.supportTransition && this.options.useCss)
-        {   
-            self.wrap.addClass('transition-active');
-        }
-
         (this.options.automatic && this.options.automaticPauseOnHover) && this._pauseOnHover();
 
         this.options.automatic && this.start();
@@ -119,6 +118,84 @@
             });
         }              
 	};
+
+    // =========================================================
+    // Preload Images
+
+    Carousel.prototype._preLoad = function ()
+    {   
+        var self = this;
+
+        if (this.options.preLoad)
+        {   
+            this.viewport.addClass('loading transition-active');
+
+            this.slides.each(function ()
+            {   
+                self._preLoadSlide($(this));
+            });
+        }
+        else
+        {
+            $(window).load(function ()
+            {
+                self._preLoadComplete();
+
+                self.viewport.addClass('transition-active');
+            });
+        }
+    };
+
+    // =========================================================
+    // Preload Individual Slide
+
+    Carousel.prototype._preLoadSlide = function (slide, amount)
+    {   
+        var self       = this,
+            noOfImages = slide.find('img').length,
+            counter    = 0;
+
+        slide.find('img').each(function ()
+        {
+            var image = new Image();
+
+            image.onload = function ()
+            {
+                counter++;
+
+                if (counter === noOfImages)
+                {
+                    self.preLoadCounter++;
+
+                    (self.preLoadCounter === self.slides.length) && self._preLoadComplete();
+                }
+            }
+
+            image.src = $(this).attr('src');
+        });
+    };
+
+    // =========================================================
+    // Preload Complete
+
+    Carousel.prototype._preLoadComplete = function ()
+    {   
+        if (this.options.preLoadDelay !== 0)
+        {
+            setTimeout(function ()
+            {
+                this.wrap.height(this.slides.eq(this.activeSlide).outerHeight());
+                this.viewport.css({'height' : (this.slides.eq(this.activeSlide).outerHeight())}).removeClass('loading');
+
+            }.bind(this), this.options.preLoadDelay);            
+        }
+        else
+        {
+            this.wrap.height(this.slides.eq(this.activeSlide).outerHeight());
+            this.viewport.css({'height' : (this.slides.eq(this.activeSlide).outerHeight())}).removeClass('loading');            
+        }
+
+    }
 
     // =========================================================
     // Set Starting Slide
@@ -144,20 +221,17 @@
 	{  
         var self = this;
 
-        this.wrap.addClass('slide').wrap('<div class="viewport"></div>');
+        this.wrap.addClass('slide transition-active').wrap('<div class="viewport"></div>');
 
         this.viewport = this.$el.find('div.viewport').css({'width' : this.width});
 
         this.options.infinite && this._setupInfiniteSlider();
 
+        this.slides.css({'width' : this.width}).eq(this.activeSlide).addClass('active');
+
         this.wrap.css({'width': (this.slides.length * this.width), 'left': - (this.width * this.activeSlide) + 'px'});
 
-        this.slides.css({'width' : this.width}).eq(this.activeSlide).addClass('active');
-        
-        $(window).load(function ()
-        {
-            self.viewport.css({'height' : (self.slides.eq(self.activeSlide).outerHeight())});
-        });
+        this._preLoad();
 	};
 
     // =========================================================
@@ -180,7 +254,7 @@
 
         var self = this;
 
-        this.wrap.addClass('fade').wrap('<div class="viewport"></div>');
+        this.wrap.addClass('fade transition-active').wrap('<div class="viewport"></div>');
 
         this.viewport = this.$el.find('div.viewport');
 
@@ -198,12 +272,7 @@
             this.slides.hide().eq(this.activeSlide).show().addClass('active');  
         }
 
-        $(window).load(function ()
-        {
-            self.wrap.height(self.slides.eq(self.activeSlide).outerHeight());
-
-            self.viewport.height(self.slides.eq(self.activeSlide).outerHeight());
-        })
+        this._preLoad();
     }
 
     // =========================================================
@@ -230,14 +299,21 @@
 
     Carousel.prototype._addDragControls = function ()
     {   
-        var self = this;
+        var self            = this,
+            needsRestarting = false;
 
         this.wrap.on('mousedown.carousel', function (e)
         {    
             e.preventDefault();
 
             if (!self.inProgress)
-            {
+            {   
+                if (self.options.automatic)
+                {
+                    needsRestarting = true;
+                    self.stop();
+                }
+
                 self.wrap.addClass('no-transition');
 
                 var startPos = e.pageX,
@@ -253,11 +329,12 @@
 
                 self.wrap.on('mouseup.carousel mouseleave.carousel', function (upEvt)
                 {
-                    var endPos = upEvt.pageX;
+                    var endPos   = upEvt.pageX,
+                        callback = (needsRestarting) ? self.start : '';
 
                     self.wrap.off('mousemove.carousel mouseup.carousel mouseleave.carousel').removeClass('no-transition');
 
-                    ((startPos - endPos) > 0) ? self.next() : self.previous();
+                    ((startPos - endPos) > 0) ? self.next(callback) : self.previous(callback);
                 });
             }
         });

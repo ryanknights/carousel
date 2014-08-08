@@ -15,15 +15,32 @@ div[data-carousel] *
     box-sizing : border-box;
 }
 
-div[data-carousel] 
-{
+div[data-carousel] .viewport {
 
+    position : relative;
+    overflow : hidden;
+    height   : 300px;
 }
 
-div[data-carousel] .viewport {
-    position : relative;
-    -webkit-transition : height 0.3s linear;
-    overflow : hidden;
+div[data-carousel] .viewport.transition-active
+{
+    -webkit-transition : height 0.2s linear;
+    -moz-transition : height 0.2s linear;
+    -o-transition : height 0.2s linear;
+    -ms-transition : height 0.2s linear;
+    transition     : height 0.2s linear;      
+}
+
+div[data-carousel] .viewport.loading:before
+{   
+    content : '';
+    position : absolute;
+    top :0;
+    bottom:0;
+    left:0;
+    right:0;
+    background-color:#333333;
+    z-index : 1;
 }
 
 div[data-carousel] .viewport > ul {
@@ -79,9 +96,10 @@ div[data-carousel] .viewport > ul.fade.transition-active li.active
 
 div[data-carousel] .viewport > ul li img {
 
-    max-width:100%;
+    width:100%;
     height:auto;
     display:block;
+    max-height : 300px;
 }
 
 
