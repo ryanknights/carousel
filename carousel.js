@@ -64,7 +64,7 @@
 	Carousel.prototype.defaultOptions =
 	{
         animation             : 'slide',
-        controls              : true,
+        controls              : false,
         pagination            : true,
         keyControls           : true,
         captions              : false,

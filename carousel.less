@@ -1,0 +1,224 @@
+@font-face {
+    font-family: 'carousel';
+    src:url('fonts/carousel.eot?fjazxv');
+    src:url('fonts/carousel.eot?#iefixfjazxv') format('embedded-opentype'),
+        url('fonts/carousel.woff?fjazxv') format('woff'),
+        url('fonts/carousel.ttf?fjazxv') format('truetype'),
+        url('fonts/carousel.svg?fjazxv#carousel') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+.transition (@args)
+{
+    -webkit-transition : @args;
+    -moz-transition    : @args;
+    -o-transition      : @args;
+    -ms-transition     : @args;
+    transition         : @args;    
+}
+
+@-moz-keyframes spin {
+    0%      {   
+        -moz-transform : rotate(0deg); 
+    }
+    100%    {   
+        -moz-transform : rotate(360deg);
+    }
+}
+
+@-webkit-keyframes spin {
+    0%      { 
+        -webkit-transform : rotate(0deg); 
+    }
+    100%    { 
+        -webkit-transform : rotate(360deg); 
+    }
+}
+
+@keyframes spin {
+    0%      {
+        transform : rotate(0deg);
+    }
+    100%    {
+        transform : rotate(360deg);
+    }
+}
+
+div[data-carousel]
+{
+    *
+    {   
+        -webkit-box-sizing : border-box;
+        -moz-box-sizing    : border-box;
+        box-sizing         : border-box;
+    }
+
+    .no-transition
+    {
+        .transition(~'none!important');
+    }
+
+    div.viewport
+    {
+        position : relative;
+        overflow : hidden;
+        height   : 300px;
+
+        &.transition-active
+        {
+            .transition (height 0.2s linear);
+        }
+
+        &.loading:before
+        {
+            content : '';
+            position : absolute;
+            top      : 0;
+            bottom   : 0;
+            left     : 0;
+            right    : 0;
+            background-color : #000000;
+            z-index          : 1;
+        }
+
+        &.loading:after
+        {
+            content   : "\e600";
+            font-family : 'carousel';
+            font-size : 30px;
+            display   : inline-block;
+            position  : absolute;
+            left      : 50%;
+            top       : 50%;
+            margin    : -15px 0px 0px -15px;
+            z-index   : 3;
+            color     : #ffffff;
+
+            -webkit-animation : spin 0.8s 0s infinite linear;
+            -moz-animation    : spin 0.8s 0s infinite linear;
+            animation         : spin 0.8s 0s infinite linear;
+        }
+
+        > ul
+        {
+            margin     : 0;
+            padding    : 0;
+            list-style : none;
+            position   : relative;
+
+            &.slide.transition-active
+            {
+                .transition(left 0.5s ease-in-out);
+            }
+
+            &.fade.transition-active li
+            {
+                opacity : 0;
+
+                .transition(opacity 0.5s ease-in-out);
+
+                &.active
+                {
+                    opacity : 1;
+                }
+            }
+
+            > li
+            {
+                float    : left;
+                position : relative;
+
+                > img
+                {
+                    width      : 100%;
+                    height     : auto;
+                    display    : block;
+                    max-height : 300px;
+                }
+            }
+        }
+
+        a[data-direction]
+        {
+            position   : absolute;
+            right      : 10px;
+            top        : 50%;
+            margin-top : -15px;
+            z-index    : 2;
+
+            &:before
+            {   
+                .transition(transform 0.2s linear);
+                
+                transform : scale(1);
+
+                content     : "\e602";
+                font-family : 'carousel';
+                display     : block;
+                color       : #ffffff;
+                font-size   : 20px;
+                padding     : 5px;
+                background-color : rgba(0,0,0,0.7);
+                border-radius : 50%;
+            }
+
+            &:hover
+            {
+                cursor : pointer;
+
+                &:before
+                {
+                    transform : scale(1.2);
+                }
+            }
+        }
+
+        a[data-direction="previous"]
+        {
+            right : auto;
+            left  : 10px;
+
+            &:before
+            {
+                content : "\e601";
+            }
+        }
+    }
+
+    div.slider-pagination
+    {
+        width      : 100%;
+        text-align : center;
+        display    : block;
+
+        > ul
+        {
+            margin     : 10px 0px;
+            display    : inline-block;
+            padding    : 5px;
+            list-style : none;
+
+            > li
+            {
+                float : left;
+
+                > a
+                {   
+                    float            : left;
+                    display          : inline-block;
+                    width            : 10px;
+                    height           : 10px;
+                    margin           : 0px 3px;
+                    background-color : #cccccc;
+                    border-radius    : 50%;
+
+                    &.active
+                    {
+                        background-color : #777777;
+                    }             
+                }
+            }
+        }
+    }
+}
